@@ -1,5 +1,10 @@
 <?php
 
+	namespace Eggcup;
+
+	class ConnectionError extends \RuntimeException {
+	}
+
 
 	/**
 	 * Markies Magic Eggcup - Redis Edition
@@ -9,9 +14,9 @@
 	 * Uses docstrings on 'hosted' objects methods to determine caching behaviour
 	 * 
 	 * Example:
-	 *   $cachedinterface = new Eggcup( new MyExistingInterface(), array( array( "host" => "192.168.4.142", "port" => "6379" ) ) );
+	 *   $cachedinterface = new Eggcup\Redis( new MyExistingInterface(), array( array( "host" => "192.168.4.142", "port" => "6379" ) ) );
 	 */
-	class Eggcup {
+	class Redis {
 
 		/**
 		 * The object we're caching
@@ -27,6 +32,11 @@
 		 * The redis instance in effect
 		 */
 		public $red;
+
+		/**
+		 * Are we connected?
+		 */
+		public $connected;
 
 		/**
 		 * Instance specific cache prefix used to segregate keys that might
@@ -53,17 +63,22 @@
 			if( is_subclass_of( $obj, "Cacheable" ) ) {
 				$this->obj->_cup = $this;
 			}
-			$this->refl = new ReflectionClass( $obj );
+			$this->refl = new \ReflectionClass( $obj );
 			#$this->red = new Predis\Client();
-			$this->red = new Redis();
+			$this->red = new \Redis();
 			foreach( $cache_config as $cc ) {
-				$this->red->connect( $cc[ "host" ], $cc[ "port" ] );
-				// can only use one
-				break;
+				if( $this->red->connect( $cc[ "host" ], $cc[ "port" ] ) ) {
+					// can only use one
+					$this->connected = true;
+					break;
+				}
+			}
+			if( !$this->connected ) {
+				throw new ConnectionError(); 
 			}
 			// Use this if you have to switch to redis native implementation (no 'd')
 			if( $this->refl->hasMethod( "__cachePrefix" ) ) {
-				Eggcup::debug( "  Setting cache prefix" );
+				self::debug( "  Setting cache prefix" );
 				$this->cache_prefix = $this->obj->__cachePrefix();
 				$redis->setOption( Redis::OPT_PREFIX, $this->obj->__cachePrefix() ); // interesting
 			}
@@ -83,9 +98,9 @@
 		 * @tag		string	The tag to use for group flushing
 		 */
 		public function tagKey( $key, $tag ) {
-			Eggcup::debug( "Tagging method $key with $tag" );
+			self::debug( "Tagging method $key with $tag" );
 			$this->red->sAdd( "__tags(" . $tag . ")", $key );
-			//Eggcup::debug( "__tags(" . $tag . ")" . "=" . $this->red->get( "__tags(" . $tag . ")" ) );
+			//self::debug( "__tags(" . $tag . ")" . "=" . $this->red->get( "__tags(" . $tag . ")" ) );
 		}
 
 		/**
@@ -97,7 +112,7 @@
 		 * @tag		string	Tag for group to delete (e.g. 'table1')
 		 */
 		public function invalidateTag( $tag ) {
-			Eggcup::debug( "  Invalidating $tag" );
+			self::debug( "  Invalidating $tag" );
 			$keylist = $this->red->smembers( "__tags(" . $tag . ")" );
 			$this->red->del( "__tags(" . $tag . ")" );
 			// keys can appear more than once in a group list - no atomic way to do write
@@ -107,10 +122,10 @@
 			if( $keylist != false ) {
 				//$keys = explode( "^|^", $keylist );
 				//$pipe = $this->red->pipeline();
-				$pipe = $this->red->multi(Redis::PIPELINE);
+				$pipe = $this->red->multi(\Redis::PIPELINE);
 				foreach( $keylist as $key ) {
 					if( $key != "" && ! isset( $keys_deleted[ $key ] ) ) {
-						Eggcup::debug( "  Deleting $key" );
+						self::debug( "  Deleting $key" );
 						$pipe->del( $key, 0 );
 						$keys_deleted[ $key ] = 1;
 					}
@@ -145,15 +160,15 @@
 					$m = array();
 					if( preg_match( "/cache\-invalidate-on\s*:\s*(.*)\s*$/", $line, $m ) ) {
 						$cache_args[ "reads" ] = array_map( "trim", explode( ",", $m[1] ) );
-						Eggcup::debug( "  Method invalidates on " . $m[1] );
+						self::debug( "  Method invalidates on " . $m[1] );
 
 					} else if( preg_match( "/cache\-expiry\s*:\s*(.*)\s*$/", $line, $m ) ) {
 						$cache_args[ "expiry" ] = (int) ( $m[1] * ( 1 + ( rand(0, 50) - 25 ) / 100 ) );
-						Eggcup::debug( "  Method expiry " . $m[1] );
+						self::debug( "  Method expiry " . $m[1] );
 
 					} else if( preg_match( "/cache\-flush\s*:\s*(.*)\s*$/", $line, $m ) ) {
 						$cache_args[ "writes" ] = array_map( "trim", explode( ",", $m[1] ) );
-						Eggcup::debug( "  Method writes " . $m[1] );
+						self::debug( "  Method writes " . $m[1] );
 
 					} else if( preg_match( "/cache\-me/", $line ) ) {
 						$cache_args[ "cacheme" ] = true;
@@ -173,7 +188,7 @@
 		 * Do not call explicitly.
 		 */
 		public function __get( $name ) {
-			Eggcup::debug( "Getting $name" );
+			self::debug( "Getting $name" );
 			return $this->obj->$name;
 		}
 
@@ -183,7 +198,7 @@
 		 * Do not call explicitly.
 		 */
 		public function __set( $name, $val ) {
-			Eggcup::debug( "Setting $name" );
+			self::debug( "Setting $name" );
 			$this->obj->$name = $val;
 		}
 
@@ -197,39 +212,39 @@
 			$com = trim( $method->getDocComment() );
 
 			if( $com ) {
-				Eggcup::debug( "Method $name has a docstring" );
+				self::debug( "Method $name has a docstring" );
 				$cache_args = $this->makeCacheArgs( $com );
 				if( isset( $cache_args[ "writes" ] ) ) {
 					foreach( $cache_args[ "writes" ] as $tag ) {
 						$this->invalidateTag( $tag );
 					}
-					Eggcup::debug( "  Returning from write method $name" );
+					self::debug( "  Returning from write method $name" );
 					return call_user_func_array( array( $this->obj, $name), $args );
 				}
 
 				if( $cache_args[ "cacheme" ] && ! defined( "CACHE_BYPASS" ) ) {
 					$key = $this->cache_prefix . $name . "(" . md5( serialize( $args ) ) . ")";
-					Eggcup::debug( "  Method $name has signature $key" );
+					self::debug( "  Method $name has signature $key" );
 					$ret = $this->red->get( $key );
-					Eggcup::debug( "    - got " . var_export($ret, true) );
+					self::debug( "    - got " . var_export($ret, true) );
 					if( NULL === $ret ) {
-						Eggcup::debug( "  --- Cache miss for $key" );
+						self::debug( "  --- Cache miss for $key" );
 						$ret = call_user_func_array( array( $this->obj, $name), $args );
 						$this->red->setex( $key, $cache_args[ "expiry" ], $ret );
 						foreach( $cache_args[ "reads" ] as $tag ) {
 							$this->tagKey( $key, $tag );
 						}
 					} else {
-						Eggcup::debug( "  *** Cache HIT for $key!" );
+						self::debug( "  *** Cache HIT for $key!" );
 					}
 					return $ret;
 
 				}
-				Eggcup::debug( "Method $name has no caching info in docstring" );
+				self::debug( "Method $name has no caching info in docstring" );
 				return call_user_func_array( array( $this->obj, $name), $args );
 
 			} else {
-				Eggcup::debug( "Method $name was handled normally" );
+				self::debug( "Method $name was handled normally" );
 				return call_user_func_array( array( $this->obj, $name), $args );
 
 			}

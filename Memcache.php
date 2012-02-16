@@ -1,5 +1,7 @@
 <?php
 
+	namespace Eggcup;
+
 	/**
 	 * Markies Magic Eggcup
 	 *
@@ -8,9 +10,9 @@
 	 * Uses docstrings on 'hosted' objects methods to determine caching behaviour
 	 * 
 	 * Example:
-	 *   $cachedinterface = new Eggcup( new MyExistingInterface(), array( array( "host" => "192.168.4.142", "port" => "11216" ) ) );
+	 *   $cachedinterface = new Eggcup\Memcache( new MyExistingInterface(), array( array( "host" => "192.168.4.142", "port" => "11216" ) ) );
 	 */
-	class Eggcup {
+	class Memcache {
 
 		/**
 		 * The object we're caching
@@ -51,10 +53,10 @@
 			$this->obj = $obj;
 			$this->refl = new ReflectionClass( $obj );
 			if( class_exists( "Memcached" ) ) {
-				$this->mc = new Memcached();
-				$this->mc->setOption( Memcached::OPT_COMPRESSION, false );
+				$this->mc = new \Memcached();
+				$this->mc->setOption( \Memcached::OPT_COMPRESSION, false );
 			} else {
-				$this->mc = new Memcache();
+				$this->mc = new \Memcache();
 				$this->mc->setCompressThreshold( 10000000000 );
 			}
 			foreach( $cache_config as $cc ) {
@@ -141,15 +143,15 @@
 					$m = array();
 					if( preg_match( "/cache\-invalidate-on\s*:\s*(.*)\s*$/", $line, $m ) ) {
 						$cache_args[ "reads" ] = array_map( "trim", explode( ",", $m[1] ) );
-						Eggcup::debug( "  Method invalidates on " . $m[1] );
+						self::debug( "  Method invalidates on " . $m[1] );
 
 					} else if( preg_match( "/cache\-expiry\s*:\s*(.*)\s*$/", $line, $m ) ) {
 						$cache_args[ "expiry" ] = (int) $m[1];
-						Eggcup::debug( "  Method expiry " . $m[1] );
+						self::debug( "  Method expiry " . $m[1] );
 
 					} else if( preg_match( "/cache\-flush\s*:\s*(.*)\s*$/", $line, $m ) ) {
 						$cache_args[ "writes" ] = array_map( "trim", explode( ",", $m[1] ) );
-						Eggcup::debug( "  Method writes " . $m[1] );
+						self::debug( "  Method writes " . $m[1] );
 
 					} else if( preg_match( "/cache\-me/", $line ) ) {
 						$cache_args[ "cacheme" ] = true;
@@ -169,7 +171,7 @@
 		 * Do not call explicitly.
 		 */
 		public function __get( $name ) {
-			Eggcup::debug( "Getting $name" );
+			self::debug( "Getting $name" );
 			return $this->obj->$name;
 		}
 
@@ -179,7 +181,7 @@
 		 * Do not call explicitly.
 		 */
 		public function __set( $name, $val ) {
-			Eggcup::debug( "Setting $name" );
+			self::debug( "Setting $name" );
 			$this->obj->$name = $val;
 		}
 
@@ -193,39 +195,39 @@
 			$com = trim( $method->getDocComment() );
 
 			if( $com ) {
-				Eggcup::debug( "Method $name has a docstring" );
+				self::debug( "Method $name has a docstring" );
 				$cache_args = $this->makeCacheArgs( $com );
 				if( isset( $cache_args[ "writes" ] ) ) {
 					foreach( $cache_args[ "writes" ] as $tag ) {
 						$this->invalidateTag( $tag );
 					}
-					Eggcup::debug( " Returning from write method $name" );
+					self::debug( " Returning from write method $name" );
 					return call_user_func_array( array( $this->obj, $name), $args );
 
 				}
 
 				if( $cache_args[ "cacheme" ] ) {
 					$key = $this->cache_prefix . $name . "(" . md5( serialize( $args ) ) . ")";
-					Eggcup::debug( "Method $name has signature $key" );
+					self::debug( "Method $name has signature $key" );
 					$ret = $this->mc->get( $key );
 					if( false === $ret ) {
-						Eggcup::debug( "--- Cache miss for $key" );
+						self::debug( "--- Cache miss for $key" );
 						$ret = call_user_func_array( array( $this->obj, $name), $args );
 						$this->mc->set( $key, $ret, $cache_args[ "expiry" ] );
 						foreach( $cache_args[ "reads" ] as $tag ) {
 							$this->tagKey( $key, $tag );
 						}
 					} else {
-						Eggcup::debug( "*** Cache HIT for $key!" );
+						self::debug( "*** Cache HIT for $key!" );
 					}
 					return $ret;
 
 				}
-				Eggcup::debug( "Method $name has no caching info in docstring" );
+				self::debug( "Method $name has no caching info in docstring" );
 				return call_user_func_array( array( $this->obj, $name), $args );
 
 			} else {
-				Eggcup::debug( "Method $name was handled normally" );
+				self::debug( "Method $name was handled normally" );
 				return call_user_func_array( array( $this->obj, $name), $args );
 
 			}

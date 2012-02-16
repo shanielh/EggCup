@@ -3,7 +3,7 @@
 	require 'predis/lib/Predis/Autoloader.php';
 	Predis\Autoloader::register();
 
-	require_once( "Eggcup_Redis.inc.php" );
+	require_once( "Redis.php" );
 
     class MyExistingClass {
 
@@ -28,7 +28,7 @@
         }
     }
 
-    $cachedclass = new Eggcup( new MyExistingClass(), array( array( "host" => "127.0.0.1", "port" => "6379" ) ) );
+    $cachedclass = new Eggcup\Redis( new MyExistingClass(), array( array( "host" => "127.0.0.1", "port" => "6379" ) ) );
     //$cachedclass = new MyExistingClass();
 
 
@@ -69,14 +69,14 @@ function bench() {
 	print "benching \n";
 
 	$start = microtime( true );
-	for( $i = 0; $i < 100000; $i ++ ) {
+	for( $i = 0; $i < 10000; $i ++ ) {
 		$cachedclass->getSomeDataFromDB( $i, 2 );
 		if( $i % 100 == 0 ) {
 			$cachedclass->setData( 1 );
 		}
 	}
 	$dur = microtime( true ) - $start;
-	print 100000/$dur;
+	print 10000/$dur;
 }
 
 bench();
