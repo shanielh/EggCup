@@ -44,6 +44,12 @@
 		 */
 		public $cache_prefix = "";
 
+		/**
+		 * Which backend we're using
+		 * Can be 'predis' or 'phpredis'
+		 */
+		public $backend = false;
+
 		public static function debug( $msg ) {
 			if( defined( "DEBUG" ) ) {
 				error_log( "Eggcup: " . $msg );
@@ -64,23 +70,40 @@
 				$this->obj->_cup = $this;
 			}
 			$this->refl = new \ReflectionClass( $obj );
-			#$this->red = new Predis\Client();
-			$this->red = new \Redis();
-			foreach( $cache_config as $cc ) {
-				if( $this->red->connect( $cc[ "host" ], $cc[ "port" ] ) ) {
+
+			if( class_exists( 'Predis\\Client' ) ) {
+				$this->backend = 'predis';
+				foreach( $cache_config as $cc ) {
 					// can only use one
-					$this->connected = true;
+					// TODO: sharding?
+					if( $this->refl->hasMethod( "__cachePrefix" ) ) {
+						$this->cache_prefix = $this->obj->__cachePrefix();
+						$this->red = new Predis\Client( $cc, array( 'prefix' => $this->obj->__cachePrefix() ) );
+					} else {
+						$this->red = new Predis\Client( $cc );
+					}
 					break;
 				}
+			} else if( class_exists( '\\Redis' ) ) {
+				$this->backend = 'phpredis';
+				$this->red = new \Redis();
+				foreach( $cache_config as $cc ) {
+					if( $this->red->connect( $cc[ "host" ], (int)$cc[ "port" ] ) ) {
+						// can only use one
+						$this->connected = true;
+						break;
+					}
+				}
+				if( $this->refl->hasMethod( "__cachePrefix" ) ) {
+					self::debug( "  Setting cache prefix" );
+					$this->cache_prefix = $this->obj->__cachePrefix();
+					$redis->setOption( Redis::OPT_PREFIX, $this->obj->__cachePrefix() ); // interesting
+				}
+			} else {
+				throw new \Exception( 'No redis client extensions found!  I need Predis or PhpRedis.' );
 			}
 			if( !$this->connected ) {
 				throw new ConnectionError(); 
-			}
-			// Use this if you have to switch to redis native implementation (no 'd')
-			if( $this->refl->hasMethod( "__cachePrefix" ) ) {
-				self::debug( "  Setting cache prefix" );
-				$this->cache_prefix = $this->obj->__cachePrefix();
-				$redis->setOption( Redis::OPT_PREFIX, $this->obj->__cachePrefix() ); // interesting
 			}
 			
 		}
@@ -121,8 +144,11 @@
 			$keys_deleted = array();
 			if( $keylist != false ) {
 				//$keys = explode( "^|^", $keylist );
-				//$pipe = $this->red->pipeline();
-				$pipe = $this->red->multi(\Redis::PIPELINE);
+				if( 'predis' == $this->backend ) {
+					$pipe = $this->red->pipeline();
+				} else {
+					$pipe = $this->red->multi(\Redis::PIPELINE);
+				}
 				foreach( $keylist as $key ) {
 					if( $key != "" && ! isset( $keys_deleted[ $key ] ) ) {
 						self::debug( "  Deleting $key" );
@@ -130,8 +156,11 @@
 						$keys_deleted[ $key ] = 1;
 					}
 				}
-				//$pipe->execute();
-				$pipe->exec();
+				if( 'predis' == $this->backend ) {
+					$pipe->execute();
+				} else {
+					$pipe->exec();
+				}
 			}
 		}
 
@@ -227,7 +256,7 @@
 					self::debug( "  Method $name has signature $key" );
 					$ret = $this->red->get( $key );
 					self::debug( "    - got " . var_export($ret, true) );
-					if( NULL === $ret ) {
+					if( 'predis' == $this->backend && NULL === $ret || 'phpredis' == $this->backend && false === $ret ) {
 						self::debug( "  --- Cache miss for $key" );
 						$ret = call_user_func_array( array( $this->obj, $name), $args );
 						$this->red->setex( $key, $cache_args[ "expiry" ], $ret );

@@ -1,10 +1,10 @@
 <?php
 
-define( 'DEBUG', True );
+//define( 'DEBUG', True );
 
 // uncomment for Predis support
-//require 'predis/lib/Predis/Autoloader.php';
-//Predis\Autoloader::register();
+// require 'predis/lib/Predis/Autoloader.php';
+// Predis\Autoloader::register();
 
 require_once( "Redis.php" );
 
@@ -35,37 +35,22 @@ class MyExistingClass {
 // ...with:
 $cachedclass = new Eggcup\Redis( new MyExistingClass(), array( array( "host" => "127.0.0.1", "port" => "6379" ) ) );
 
-function test() {
+function bench() {
 	global $cachedclass;
-
-	$cachedclass->setData( 1 );
 	
-    // this return value will be cached for 60s
-    // first call will use DB
-    print $cachedclass->getSomeDataFromDB( 1, 2 );
-	print "\n";
+	print "benching \n";
 
-	sleep( 2 );
-
-	$cachedclass->date = 2;
-
-    // second call will use memcache
-    print $cachedclass->getSomeDataFromDB( 1, 2 );
-	print "\n";
-
-	sleep( 2 );
-
-    // different args so will use DB again (cache key auto constructed from args)
-    print $cachedclass->getSomeDataFromDB( 3, 4 );
-	print "\n";
-
-    sleep( 10 );
-
-    // will us DB again
-    print $cachedclass->getSomeDataFromDB( 1, 2 );
-	print "\n";
+	$start = microtime( true );
+	for( $i = 0; $i < 10000; $i ++ ) {
+		$cachedclass->getSomeDataFromDB( $i, 2 );
+		if( $i % 100 == 0 ) {
+			$cachedclass->setData( 1 );
+		}
+	}
+	$dur = microtime( true ) - $start;
+	print 10000/$dur;
 }
 
-test();
+bench();
 
 // EOF
