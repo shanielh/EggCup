@@ -3,13 +3,22 @@ EggCup
 
 Caching 'decorators' for PHP classes.
 
-Used to wrap any PHP object with a memcache based caching layer.
-Uses docstrings on 'hosted' objects methods to determine caching
+Used to wrap any PHP object with a memcache or redis based caching
+layer.  Uses docstrings on 'hosted' objects methods to determine caching
 behaviour
 
-Requires one of the two PHP memcached modules (called 'Memcached' and
+The Redis client supports efficient tag based cache invalidation.
+Memcache attempts to emulate this using string based lists, which is
+slow and not very atomic.  Only use invalidation if you really need it -
+in many cases just letting keys expire will suit needs (we ran Eurogamer
+for years with this model).
+
+Memcache support requires one of the two PHP memcached modules (called 'Memcached' and
 'Memcache' - note no 'd' in second.  It's bloody confusing, I know).
 Memcached (with 'd') is recommended.
+
+Redis mode (Eggcup_Redis.inc.php) supports both Predis (native PHP
+version) and phpredis (C module), the latter being about 3 times faster.
 
 Example::
 
