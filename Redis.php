@@ -66,7 +66,7 @@
 		 */
 		public function __construct( $obj, $cache_config ) {
 			$this->obj = $obj;
-			if( is_subclass_of( $obj, "Cacheable" ) ) {
+			if( $obj instanceof Cacheable ) {
 				$this->obj->_cup = $this;
 			}
 			$this->refl = new \ReflectionClass( $obj );
@@ -280,11 +280,5 @@
 		}
 	}
 
-	abstract class Cacheable {
-		public $_cup = null;
-		public function __construct() {
-			$this->_cup = $this;
-		}
-	}
 
 ?>

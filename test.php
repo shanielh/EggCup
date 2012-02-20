@@ -6,9 +6,10 @@ define( 'DEBUG', True );
 //require 'predis/lib/Predis/Autoloader.php';
 //Predis\Autoloader::register();
 
+require_once( "Cacheable.php" );
 require_once( "Redis.php" );
 
-class MyExistingClass {
+class MyExistingClass extends \Eggcup\Cacheable {
 
 	public $date = 1;
 
@@ -33,7 +34,7 @@ class MyExistingClass {
 
 // replace $cachedclass = new MyExistingClass();
 // ...with:
-$cachedclass = new Eggcup\Redis( new MyExistingClass(), array( array( "host" => "127.0.0.1", "port" => "6379" ) ) );
+$cachedclass = new \Eggcup\Redis( new MyExistingClass(), array( array( "host" => "red1.db", "port" => "6379" ) ) );
 
 function test() {
 	global $cachedclass;
