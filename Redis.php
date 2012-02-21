@@ -177,7 +177,7 @@
 		 */
 		public function makeCacheArgs( $com ) {
 			$cache_args = array(
-				"cachme" => false,
+				"cacheme" => false,
 				"reads" => array(),
 				//"writes" => array(),
 				"expiry" => 5
@@ -259,11 +259,12 @@
 					if( 'predis' == $this->backend && NULL === $ret || 'phpredis' == $this->backend && false === $ret ) {
 						self::debug( "  --- Cache miss for $key" );
 						$ret = call_user_func_array( array( $this->obj, $name), $args );
-						$this->red->setex( $key, $cache_args[ "expiry" ], $ret );
+						$this->red->setex( $key, $cache_args[ "expiry" ], serialize( $ret ) );
 						foreach( $cache_args[ "reads" ] as $tag ) {
 							$this->tagKey( $key, $tag );
 						}
 					} else {
+						$ret = unserialize( $ret );
 						self::debug( "  *** Cache HIT for $key!" );
 					}
 					return $ret;
