@@ -97,7 +97,7 @@
 				if( $this->refl->hasMethod( "__cachePrefix" ) ) {
 					self::debug( "  Setting cache prefix" );
 					$this->cache_prefix = $this->obj->__cachePrefix();
-					$redis->setOption( Redis::OPT_PREFIX, $this->obj->__cachePrefix() ); // interesting
+					$this->red->setOption( \Redis::OPT_PREFIX, $this->obj->__cachePrefix() ); // interesting
 				}
 			} else {
 				throw new \Exception( 'No redis client extensions found!  I need Predis or PhpRedis.' );
