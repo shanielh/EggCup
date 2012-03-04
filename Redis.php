@@ -51,8 +51,8 @@
 		public $backend = false;
 
 		public static function debug( $msg ) {
-			if( defined( "DEBUG" ) ) {
-				error_log( "Eggcup: " . $msg );
+			if( defined( "CACHE_DEBUG" ) ) {
+				error_log( "Eggcup: " . substr( $msg, 0, 100 ) );
 			}
 		}
 		/**
