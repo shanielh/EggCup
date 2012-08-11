@@ -1,0 +1,3 @@
+[submodule "ext/pUnit"]
+	path = ext/pUnit
+	url = git://github.com/morishani/pUnit.git
