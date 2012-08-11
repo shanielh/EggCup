@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Jerusalem');
 
 $pUnitPath = __DIR__ . '/../../ext/pUnit/';
 

@@ -22,14 +22,14 @@ class InMemoryCacheBackend implements ICacheBackend
 	 **/
 	public function Cache(ICacheItem $item)
 	{
-		$_keyHash[$item->GetKey()] = &$item;
+		$this->_keyHash[$item->GetKey()] = &$item;
 		
 		foreach ($item->GetTags() as $tag) {
-			if (!isset($_tagsHash[$tag])) {
-				$_tagsHash[$tag] = array();
+			if (!isset($this->_tagsHash[$tag])) {
+				$this->_tagsHash[$tag] = array();
 			}
 			
-			$_tagsHash[$tag][] = &$item;
+			$this->_tagsHash[$tag][] = &$item;
 		}
 	}
 	
@@ -41,12 +41,12 @@ class InMemoryCacheBackend implements ICacheBackend
 	 **/
 	public function DeleteByTag($tagName) {
 		
-		if (isset($_tagsHash[$tagName])) {
-			foreach ($_tagsHash[$tagName] as $item) {
-				unset($_keyHash[$item->GetKey()]);
+		if (isset($this->_tagsHash[$tagName])) {
+			foreach ($this->_tagsHash[$tagName] as $item) {
+				unset($this->_keyHash[$item->GetKey()]);
 			}
 			
-			unset($_tagsHash[$tagName]);
+			unset($this->_tagsHash[$tagName]);
 		}
 		
 	}
@@ -58,12 +58,19 @@ class InMemoryCacheBackend implements ICacheBackend
 	 * @return bool
 	 **/
 	public function TryGetByKey($key, &$value)
-	{
-		if (!isset($_keyHash[$key])) {
+	{	
+		if (!isset($this->_keyHash[$key])) {
 			return false;
 		}
-		
-		$value = $_keyHash[$key];
+		$cacheItem = $this->_keyHash[$key];
+				
+		// Fallback by expiration date
+		if ($cacheItem->GetExpiryDate() > new \DateTime()) {
+			return false;
+		}
+
+		// Get value
+		$value = $cacheItem->GetValue();
 		return true;
 	}
 	
