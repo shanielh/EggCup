@@ -6,6 +6,7 @@ set_include_path(get_include_path() . PATH_SEPARATOR . $pUnitPath . 'src/externa
 
 require_once($pUnitPath.'src/autoloader.php');
 require_once('Mockery/Loader.php');
+require_once( __DIR__ . '/../Autoloader.php');
 
 $loader = new \Mockery\Loader();
 $loader->register();

@@ -1,5 +1,6 @@
 <?php
-namespace EggCup\Backend	
+namespace EggCup\Backend;
+use \EggCup\ICacheItem as ICacheItem;
 
 /**
  * undocumented class
