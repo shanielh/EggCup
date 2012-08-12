@@ -10,7 +10,7 @@ class CommentParser {
 	
 	private $_reflection;
 	
-	const TAGS_REGEX = "/\s+\@(?P<key>\S*)\s*(?P<value>.*?)\s+$/im";
+	const TAGS_REGEX = "/\s+\@(?P<key>\S*)[[:blank:]]*(?P<value>.*?)[[:blank:]]*$/im";
 	
 	/**
 	 * Creates an instance of CommentParser for the given object.

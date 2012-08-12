@@ -65,7 +65,7 @@ class InMemoryCacheBackend implements ICacheBackend
 		$cacheItem = $this->_keyHash[$key];
 				
 		// Fallback by expiration date
-		if ($cacheItem->GetExpiryDate() > new \DateTime()) {
+		if ($cacheItem->GetExpiryDate() <= new \DateTime()) {
 			return false;
 		}
 
