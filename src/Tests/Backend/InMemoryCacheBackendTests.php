@@ -17,7 +17,7 @@ class InMemoryCacheBackendTests {
 		// Arrange
 		$cache = new \EggCup\Backend\InMemoryCacheBackend();
 		$date = new DateTime();
-		$date = $date->sub(new DateInterval("P1Y"));
+		$date = $date->add(new DateInterval("P1Y"));
 		$cacheItem = new \EggCup\CacheItem("key", $date, array(), "value");
 		// Act
 		$cache->Cache($cacheItem);
@@ -36,7 +36,7 @@ class InMemoryCacheBackendTests {
 		// Arrange
 		$cache = new \EggCup\Backend\InMemoryCacheBackend();
 		$date = new DateTime();
-		$date = $date->add(new DateInterval("P1Y"));
+		$date = $date->sub(new DateInterval("P1Y"));
 		$cacheItem = new \EggCup\CacheItem("key", $date, array(), "value");
 		// Act
 		$cache->Cache($cacheItem);
@@ -55,7 +55,7 @@ class InMemoryCacheBackendTests {
 		// Arrange
 		$cache = new \EggCup\Backend\InMemoryCacheBackend();
 		$date = new DateTime();
-		$date = $date->sub(new DateInterval("P1Y"));
+		$date = $date->add(new DateInterval("P1Y"));
 		$cacheItem = new \EggCup\CacheItem("key", $date, array("MyTag"), "value");
 		$cache->Cache($cacheItem);
 		// Act
