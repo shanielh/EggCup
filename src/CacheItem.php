@@ -20,8 +20,7 @@ class CacheItem implements ICacheItem {
 	/**
 	* Creates an instance of CacheItem
 	*/
-	public function __construct($key, \DateTime $expirationDate, array $tags, $value) 
-	{
+	public function __construct($key, \DateTime $expirationDate, array $tags, $value) {
 		$this->_key = $key;
 		$this->_expirationDate = $expirationDate;
 		$this->_tags = $tags;
