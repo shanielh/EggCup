@@ -49,7 +49,10 @@ class CacheDecorator
 		$retVal = array();
 		
 		foreach (explode($delimiter, $string) as $val) {
-			$retVal[] = trim($val);
+			$val = trim($val);
+			if ($val != '') {
+				$retVal[] = $val;
+			}
 		}
 		
 		return $retVal;
@@ -62,7 +65,7 @@ class CacheDecorator
 	 **/
 	public function __call($name, $args) {
 		
-		$key = $name;
+		$key = serialize(array($name, $args));
 		$options = $this->_commentParser->GetTags($name);
 		
 		// Invalidations
