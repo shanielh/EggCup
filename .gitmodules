@@ -1,3 +1,6 @@
 [submodule "ext/pUnit"]
 	path = ext/pUnit
 	url = git://github.com/morishani/pUnit.git
+[submodule "ext/predis"]
+	path = ext/predis
+	url = https://github.com/nrk/predis.git
