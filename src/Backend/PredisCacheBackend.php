@@ -12,7 +12,7 @@ require_once '../../ext/predis/autoload.php';
  * @package default
  * @author Shani Elharrar
  **/
-class RedisCacheBackend implements ICacheBackend
+class PredisCacheBackend implements ICacheBackend
 {
 	
 	private $_client;
@@ -44,13 +44,13 @@ class RedisCacheBackend implements ICacheBackend
 		$replies = $this->_client->pipeline(function($pipe) use ($item) {
 			
 			$ttl = $item->GetExpiryDate()->getTimestamp() - time();
-			$key = RedisCacheBackend::FormatKey($item->GetKey());
+			$key = PredisCacheBackend::FormatKey($item->GetKey());
 			
 			$pipe->set($key, serialize($item->GetValue()));
 			$pipe->expire($key, $ttl);
 
 			foreach ($item->GetTags() as $tag) {
-				$pipe->sadd(RedisCacheBackend::FormatTag($tag), $key);
+				$pipe->sadd(PredisCacheBackend::FormatTag($tag), $key);
 			}
 			
 		});
@@ -65,7 +65,7 @@ class RedisCacheBackend implements ICacheBackend
 	 **/
 	public function DeleteByTag($tagName) {
 		
-		$tagFormatted = RedisCacheBackend::FormatTag($tagName);
+		$tagFormatted = PredisCacheBackend::FormatTag($tagName);
 		$members = $this->_client->smembers($tagFormatted);
 		
 		$replies = $this->_client->pipeline(function ($pipe) use ($members, $tagFormatted) {
