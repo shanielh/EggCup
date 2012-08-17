@@ -4,10 +4,9 @@ Invisible caching 'decorators' for PHP classes.
 
 Used to wrap any PHP object with a caching layer. Uses docstrings on 'hosted' objects methods to determine caching behaviour.
 
-Currently only in-memory caching support is enabled, But soon to have redis support. 
+Currently only in-memory and redis caching support is enabled.
 
-Redis backend will support both Predis (native PHP
-version) and phpredis (C module), the latter being about 3 times faster.
+Redis backend supported by Predis, But supporting phpredis (C module) is on its way.
 
 ## Tags
 	
@@ -49,4 +48,4 @@ version) and phpredis (C module), the latter being about 3 times faster.
 
 ## Known Issues
 
-Currently, only support for in memory caching supported. Support for redis is planned, And maybe for memcache too. 
+The only 'external' caching server supported is Redis. Please add issue if you found any.
