@@ -12,12 +12,12 @@ require_once '../../ext/predis/autoload.php';
  * @package default
  * @author Shani Elharrar
  **/
-class PredisCacheBackend implements ICacheBackend
+class PhpRedisCacheBackend implements ICacheBackend
 {
 	
 	private $_client;
 	
-	public function __construct(\Predis\Client $client) {
+	public function __construct(\Redis $client) {
 		
 		$this->_client = $client;
 		
@@ -41,20 +41,19 @@ class PredisCacheBackend implements ICacheBackend
 		
 		$client = $this->_client;
 				
-		$replies = $this->_client->pipeline(function($pipe) use ($item) {
-			
-			$expireAt = $item->GetExpiryDate()->getTimestamp();
-			$key = PredisCacheBackend::FormatKey($item->GetKey());
-			
-			$pipe->set($key, serialize($item->GetValue()));
-			$pipe->expireAt($key, $expireAt);
-
-			foreach ($item->GetTags() as $tag) {
-				$pipe->sadd(PredisCacheBackend::FormatTag($tag), $key);
-			}
-			
-		});
+		$multi = $this->_client->multi();
 		
+		$expireAt = $item->GetExpiryDate()->getTimestamp();
+		$key = self::FormatKey($item->GetKey());
+			
+		$multi->set($key, serialize($item->GetValue()));
+		$multi->expireAt($key, $expireAt);
+
+		foreach ($item->GetTags() as $tag) {
+			$multi->sAdd(self::FormatTag($tag), $key);
+		}
+		
+		$multi->exec();
 	}
 	
 	/**
@@ -65,19 +64,17 @@ class PredisCacheBackend implements ICacheBackend
 	 **/
 	public function DeleteByTag($tagName) {
 		
-		$tagFormatted = PredisCacheBackend::FormatTag($tagName);
-		$members = $this->_client->smembers($tagFormatted);
+		$tagFormatted = self::FormatTag($tagName);
+		$members = $this->_client->sMembers($tagFormatted);
+
+		$multi = $this->_client->multi();
+		$multi->del($tagFormatted);
 		
-		$replies = $this->_client->pipeline(function ($pipe) use ($members, $tagFormatted) {
+		foreach ($members as $member) {
+			$multi->del($member);
+		}
 		
-			$pipe->del($tagFormatted);
-		
-			foreach ($members as $member) {
-				$pipe->del($member);
-			}
-		
-		});
-		
+		$multi->exec();
 	}
 	
 	/**
@@ -90,7 +87,7 @@ class PredisCacheBackend implements ICacheBackend
 		
 		$value = $this->_client->get(self::FormatKey($key));
 		
-		if ($value === null) {
+		if ($value === false) {
 			return false;
 		}
 		

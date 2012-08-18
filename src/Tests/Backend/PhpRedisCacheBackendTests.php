@@ -2,14 +2,16 @@
 use \pUnit\Assert as Assert;
 
 /**
- * A tests class for PredisCacheBackend.
+ * A tests class for PhpRedisCacheBackend.
  *
  **/
-class PredisCacheBackendTests {
+class PhpRedisCacheBackendTests {
 	
 	private function GetCache() {
 		
-		return new \EggCup\Backend\PredisCacheBackend(new \Predis\Client(array('host' => '127.0.0.1', 'port' => 6379)));
+		$redis = new Redis();
+		$redis->pconnect('127.0.0.1');
+		return new \EggCup\Backend\PhpRedisCacheBackend($redis);
 
 	}
 	
