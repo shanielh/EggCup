@@ -4,7 +4,7 @@ Invisible caching 'decorators' for PHP classes.
 
 Used to wrap any PHP object with a caching layer. Uses docstrings on 'hosted' objects methods to determine caching behaviour.
 
-Currently only in-memory and redis caching support is enabled.
+Currently only in-memory, redis and apc (With no tags support) caching support is enabled.
 
 Redis backend supported by Predis and phpredis (C module), The latter is 3 times faster and has lower memory footprint.
 
@@ -46,6 +46,19 @@ Redis backend supported by Predis and phpredis (C module), The latter is 3 times
     // will us DB again
     $cachedclass->getSomeDataFromDB( 1, 2 );
 
+## Testing
+
+To run tests, you'll need redis server up (@ 127.0.0.1, default port), and apc enabled (set configuration option apc.enable_cli = 1).
+
+Then go to the console and run :
+
+		cd src\Tests
+		php Index.php
+
+If any test fail, Please submit issue.
+
 ## Known Issues
 
-The only 'external' caching server supported is Redis. Please add issue if you found any.
+The only 'external' caching server supported is Redis. Also, because the caching tags is set in the code, Configurating cache options by file is planned.
+
+Please add issue if you found any.
