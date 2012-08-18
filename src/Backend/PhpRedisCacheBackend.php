@@ -2,9 +2,6 @@
 namespace EggCup\Backend;
 use \EggCup\ICacheItem as ICacheItem;
 
-require_once '../../ext/predis/autoload.php';
-\Predis\Autoloader::register();
-
 /**
  * Redis cache backend, for long running scalable php applications or
  * short running php applications (Web sites, etc')
