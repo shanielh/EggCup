@@ -6,7 +6,7 @@ Used to wrap any PHP object with a caching layer. Uses docstrings on 'hosted' ob
 
 Currently only in-memory and redis caching support is enabled.
 
-Redis backend supported by Predis, But supporting phpredis (C module) is on its way.
+Redis backend supported by Predis and phpredis (C module), The latter is 3 times faster and has lower memory footprint.
 
 ## Tags
 	
